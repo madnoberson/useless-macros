@@ -1,0 +1,14 @@
+repos:
+-   repo: local
+    hooks:
+    - id: rustfmt
+      name: Rust Format
+      entry: cargo fmt --
+      language: system
+      types: [rust]
+    - id: rust-check
+      name: Rust Check
+      entry: cargo check
+      language: system
+      types: [rust]
+      pass_filenames: false
