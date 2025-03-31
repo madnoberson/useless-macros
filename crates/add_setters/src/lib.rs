@@ -21,7 +21,7 @@ use implementation::do_add_setters;
 /// # Examples
 ///
 /// ```rust
-/// use gaems12_tui_macros::add_setters;
+/// use useless_add_setters::add_setters;
 ///
 /// #[add_setters]
 /// #[derive(Debug, PartialEq, Default)]
