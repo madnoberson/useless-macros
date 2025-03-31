@@ -1,5 +1,8 @@
 use proc_macro::TokenStream;
-use syn::{ItemStruct, parse_macro_input};
+use syn::{
+    ItemStruct,
+    parse_macro_input,
+};
 
 mod implementation;
 use implementation::do_add_setters;
