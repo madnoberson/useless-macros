@@ -21,7 +21,7 @@ fn test_basic_scenario() {
 }
 
 #[test]
-fn test_basic_scenarion_with_generics() {
+fn test_basic_scenario_with_generics() {
     #[add_setters]
     #[derive(Debug, PartialEq, Default)]
     struct Foo<T>
