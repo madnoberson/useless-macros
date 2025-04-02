@@ -39,7 +39,7 @@ use implementation::do_add_setters;
 ///     .with_bar(100 as u16)
 ///     .with_baz("some_text");
 ///
-/// // Code bellow will panic.
+/// // Code bellow will not compile.
 /// // foo = foo.with_foobar(true);
 ///
 /// let expected_foo = Foo {
