@@ -18,11 +18,7 @@ pub fn make_setter_methods(
         let field_name = &field.ident;
         let field_type = &field.ty;
 
-        let prefix = setter_config.prefix();
-        let suffix = setter_config.suffix();
-
-        let method_name =
-            Ident::new(&format!("{prefix}_{suffix}"), Span2::call_site());
+        let method_name = Ident::new(setter_config.name(), Span2::call_site());
 
         let setter_method = quote! {
             #[must_use]

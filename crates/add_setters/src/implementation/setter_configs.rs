@@ -14,8 +14,7 @@ const DEFAULT_PREFIX: &str = "with";
 
 pub struct SetterConfig<'a> {
     field: &'a Field,
-    prefix: String,
-    suffix: String,
+    name: String,
 }
 
 impl<'a> SetterConfig<'a> {
@@ -23,12 +22,8 @@ impl<'a> SetterConfig<'a> {
         self.field
     }
 
-    pub fn prefix(&self) -> &str {
-        &self.prefix
-    }
-
-    pub fn suffix(&self) -> &str {
-        &self.suffix
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -58,8 +53,7 @@ pub fn make_setter_configs(fields: &mut Fields) -> Vec<SetterConfig> {
 
         let setter_config = SetterConfig {
             field: field,
-            prefix: prefix,
-            suffix: suffix,
+            name: format!("{prefix}_{suffix}"),
         };
         setter_configs.push(setter_config);
     }
