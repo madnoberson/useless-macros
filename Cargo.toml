@@ -1,2 +1,3 @@
 [workspace]
 members = ["crates/add_setters"]
+resolver = "3"
