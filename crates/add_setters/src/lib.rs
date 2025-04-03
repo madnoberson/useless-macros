@@ -23,7 +23,8 @@ use implementation::do_add_setters;
 /// `#[disable_setter]` attribute on fields to prevent the
 /// generation of setter methods for those fields. Customize the
 /// method names using `#[setter_prefix = "prefix"]` to change the
-/// prefix and `#[setter_suffix = "suffix"]` to change a suffix.
+/// prefix and `#[setter_suffix = "suffix"]` to change a suffix or
+/// change whole method name using `#[setter_name = "name"]`.
 ///
 /// # Examples
 ///
@@ -44,16 +45,20 @@ use implementation::do_add_setters;
 ///     #[setter_suffix = "fb"]
 ///     foobaz: bool,
 ///
-///     #[setter_prefix = "set"]
+///     #[setter_prefix = "provide"]
 ///     #[setter_suffix = "bb"]
 ///     barbaz: String,
+///
+///     #[setter_name = "install_bazfoo"]
+///     bazfoo: String,
 /// }
 ///
 /// let foo = Foo::default()
 ///     .with_bar(100 as u16)
 ///     .set_baz("some_text")
 ///     .with_fb(true)
-///     .set_bb("some_text");
+///     .provide_bb("some_text")
+///     .install_bazfoo("some_text");
 ///
 /// // Setter for `foobar` is disabled and will not compile:
 /// // foo = foo.with_foobar(true);
@@ -64,6 +69,7 @@ use implementation::do_add_setters;
 ///     foobar: false,
 ///     foobaz: true,
 ///     barbaz: String::from("some_text"),
+///     bazfoo: String::from("some_text"),
 /// };
 /// assert_eq!(foo, expected_foo);
 /// ```
