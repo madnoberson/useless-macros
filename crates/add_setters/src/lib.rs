@@ -59,7 +59,7 @@ use implementation::do_add_setters;
 /// }
 ///
 /// let foo = Foo::default()
-///     .with_bar(100 as u16)              // Public
+///     .with_bar(100 as u16)       // Public
 ///     .set_baz("some_text")       // Public
 ///     .with_fb(true)              // Pub(crate)
 ///     .provide_bb("other_text")   // Public
