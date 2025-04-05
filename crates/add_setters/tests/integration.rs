@@ -24,7 +24,7 @@ fn test_basic_scenario() {
 fn test_basic_scenario_with_generics() {
     #[add_setters]
     #[derive(Debug, PartialEq, Default)]
-    struct Foo<T>
+    pub struct Foo<T>
     where
         T: Debug + PartialEq + Default,
     {

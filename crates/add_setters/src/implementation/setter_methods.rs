@@ -5,7 +5,10 @@ use proc_macro2::{
 use quote::quote;
 use syn::Ident;
 
-use super::setter_configs::SetterConfig;
+use super::setter_configs::{
+    SetterConfig,
+    SetterVisibility,
+};
 
 pub fn make_setter_methods(
     setter_configs: Vec<SetterConfig>,
@@ -20,14 +23,35 @@ pub fn make_setter_methods(
 
         let method_name = Ident::new(setter_config.name(), Span2::call_site());
 
-        let setter_method = quote! {
-            #[must_use]
-            pub fn #method_name(
-                mut self,
-                #field_name: impl Into<#field_type>,
-            ) -> Self {
-                self.#field_name = #field_name.into();
-                self
+        let visibility = match setter_config.visibility() {
+            SetterVisibility::Pub => Some("pub"),
+            SetterVisibility::PubForCrate => Some("pub(crate)"),
+            SetterVisibility::Private => None,
+        };
+        let setter_method = if visibility.is_some() {
+            let method_visibility =
+                Ident::new(visibility.unwrap(), Span2::call_site());
+
+            quote! {
+                #[must_use]
+                #method_visibility fn #method_name(
+                    mut self,
+                    #field_name: impl Into<#field_type>,
+                ) -> Self {
+                    self.#field_name = #field_name.into();
+                    self
+                }
+            }
+        } else {
+            quote! {
+                #[must_use]
+                fn #method_name(
+                    mut self,
+                    #field_name: impl Into<#field_type>,
+                ) -> Self {
+                    self.#field_name = #field_name.into();
+                    self
+                }
             }
         };
         setter_methods.push(setter_method);
