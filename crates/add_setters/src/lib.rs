@@ -29,7 +29,7 @@ use implementation::do_add_setters;
 ///   - `pub(crate)`: Crate-only access.
 ///   - `private`: Private access.
 ///
-/// ### Example
+/// # Example
 /// ```rust
 /// use useless_add_setters::add_setters;
 ///
