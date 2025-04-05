@@ -1,3 +1,27 @@
 [workspace]
-members = ["crates/add_setters"]
 resolver = "3"
+members = ["crates/*"]
+default-members = ["crates/*"]
+
+[workspace.package]
+license = "Apache-2.0"
+repository = "https://github.com/madnoberson/useless-macros"
+edition = "2024"
+rust-version = "1.85.0"
+
+[package]
+name = "useless_macros"
+description = "Useless, though fancy, rust macros."
+version = "0.1.0"
+
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["add_setters"]
+add_setters = ["useless_add_setters"]
+
+[dependencies]
+useless_add_setters = { version = "0.1.*", path = "crates/add_setters", optional = true }
