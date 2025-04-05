@@ -23,35 +23,20 @@ pub fn make_setter_methods(
 
         let method_name = Ident::new(setter_config.name(), Span2::call_site());
 
-        let visibility = match setter_config.visibility() {
-            SetterVisibility::Pub => Some("pub"),
-            SetterVisibility::PubForCrate => Some("pub(crate)"),
+        let method_visibility = match setter_config.visibility() {
+            SetterVisibility::Pub => Some(quote! { pub }),
+            SetterVisibility::PubForCrate => Some(quote! { pub(crate) }),
             SetterVisibility::Private => None,
         };
-        let setter_method = if visibility.is_some() {
-            let method_visibility =
-                Ident::new(visibility.unwrap(), Span2::call_site());
 
-            quote! {
-                #[must_use]
-                #method_visibility fn #method_name(
-                    mut self,
-                    #field_name: impl Into<#field_type>,
-                ) -> Self {
-                    self.#field_name = #field_name.into();
-                    self
-                }
-            }
-        } else {
-            quote! {
-                #[must_use]
-                fn #method_name(
-                    mut self,
-                    #field_name: impl Into<#field_type>,
-                ) -> Self {
-                    self.#field_name = #field_name.into();
-                    self
-                }
+        let setter_method = quote! {
+            #[must_use]
+            #method_visibility fn #method_name(
+                mut self,
+                #field_name: impl Into<#field_type>,
+            ) -> Self {
+                self.#field_name = #field_name.into();
+                self
             }
         };
         setter_methods.push(setter_method);
