@@ -7,27 +7,29 @@ use syn::{
 mod implementation;
 use implementation::do_add_setters;
 
-/// Automatically generates builder-style setter methods for a
-/// struct's fields. Each generated method follows the naming
-/// pattern `<prefix>_<suffix>`, where `prefix` defaults
-/// to `with` and `suffix` defaults to the field name. The method
-/// takes a single parameter and accepts any type that implements
-/// `Into<T>`, where `T` is the type of the corresponding field.
-/// This macro enhances struct initialization by enabling a fluent,
-/// chainable API.
+/// Generates builder-style setter methods for struct fields, enabling
+/// a fluent, chainable API for struct initialization. Each setter
+/// follows the pattern `<prefix>_<suffix>` (default: `with_<field_name>`),
+/// accepts any type implementing `Into<T>` (where `T` is the field type),
+/// and returns a modified instance.
 ///
-/// The macro is applied to a struct using the `#[add_setters]`
-/// attribute and works with structs that have named fields.
-/// The original struct remains unchanged, and the setters return
-/// a new instance with the updated field value. Use the
-/// `#[disable_setter]` attribute on fields to prevent the
-/// generation of setter methods for those fields. Customize the
-/// method names using `#[setter_prefix = "prefix"]` to change the
-/// prefix and `#[setter_suffix = "suffix"]` to change a suffix or
-/// change whole method name using `#[setter_name = "name"]`.
+/// Apply this macro to a struct with named fields using `#[add_setters]`.
+/// The original struct remains unchanged, and setters provide a
+/// convenient way to set field values in a chainable manner.
 ///
-/// # Examples
+/// ### Customization Options
+/// - `#[disable_setter]`: Skip setter generation for a specific field.
+/// - `#[setter_prefix = "prefix"]`: Override the default `with` prefix.
+/// - `#[setter_suffix = "suffix"]`: Customize the suffix
+///    (defaults to field name).
+/// - `#[setter_name = "name"]`: Set a custom method name, overriding
+///    prefix/suffix.
+/// - `#[setter_visibility = "<vis>"]`: Control method visibility:
+///   - `pub`: Public access (default).
+///   - `pub(crate)`: Crate-only access.
+///   - `private`: Private access.
 ///
+/// ### Example
 /// ```rust
 /// use useless_add_setters::add_setters;
 ///
@@ -37,12 +39,14 @@ use implementation::do_add_setters;
 ///     bar: u16,
 ///
 ///     #[setter_prefix = "set"]
+///     #[setter_visibility = "pub"]
 ///     baz: String,
 ///
 ///     #[disable_setter]
 ///     foobar: bool,
 ///
 ///     #[setter_suffix = "fb"]
+///     #[setter_visibility = "pub(crate)"]
 ///     foobaz: bool,
 ///
 ///     #[setter_prefix = "provide"]
@@ -50,28 +54,26 @@ use implementation::do_add_setters;
 ///     barbaz: String,
 ///
 ///     #[setter_name = "install_bazfoo"]
+///     #[setter_visibility = "private"]
 ///     bazfoo: String,
 /// }
 ///
 /// let foo = Foo::default()
-///     .with_bar(100 as u16)
-///     .set_baz("some_text")
-///     .with_fb(true)
-///     .provide_bb("some_text")
-///     .install_bazfoo("some_text");
+///     .with_bar(100 as u16)              // Public
+///     .set_baz("some_text")       // Public
+///     .with_fb(true)              // Pub(crate)
+///     .provide_bb("other_text")   // Public
+///     .install_bazfoo("bazfoo");  // Private
 ///
-/// // Setter for `foobar` is disabled and will not compile:
-/// // foo = foo.with_foobar(true);
-///
-/// let expected_foo = Foo {
+/// let expected = Foo {
 ///     bar: 100,
 ///     baz: String::from("some_text"),
 ///     foobar: false,
 ///     foobaz: true,
-///     barbaz: String::from("some_text"),
-///     bazfoo: String::from("some_text"),
+///     barbaz: String::from("other_text"),
+///     bazfoo: String::from("bazfoo"),
 /// };
-/// assert_eq!(foo, expected_foo);
+/// assert_eq!(foo, expected);
 /// ```
 #[proc_macro_attribute]
 pub fn add_setters(_: TokenStream, input: TokenStream) -> TokenStream {
