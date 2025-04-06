@@ -7,7 +7,7 @@ on:
 
 jobs:
   lint-and-test:
-    uses: ./.github/workflows/check.yaml
+    uses: ./.github/workflows/lint-and-test.yaml
 
   release:
     runs-on: ubuntu-latest
