@@ -1,3 +1,3 @@
-#[cfg(feature = "add_setters")]
+#[cfg(feature = "setter_maker")]
 #[doc(inline)]
-pub use useless_add_setters as add_setters;
+pub use useless_setter_maker as setter_maker;

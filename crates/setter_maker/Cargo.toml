@@ -1,5 +1,5 @@
 [package]
-name = "useless_add_setters"
+name = "useless_setter_maker"
 description = "Macro for generating setter methods."
 version = "0.1.0"
 

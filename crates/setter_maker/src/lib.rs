@@ -5,7 +5,7 @@ use syn::{
 };
 
 mod implementation;
-use implementation::do_add_setters;
+use implementation::do_make_setters;
 
 /// Generates builder-style setter methods for struct fields, enabling
 /// a fluent, chainable API for struct initialization. Each setter
@@ -13,7 +13,7 @@ use implementation::do_add_setters;
 /// accepts any type implementing `Into<T>` (where `T` is the field type),
 /// and returns a modified instance.
 ///
-/// Apply this macro to a struct with named fields using `#[add_setters]`.
+/// Apply this macro to a struct with named fields using `#[make_setters]`.
 /// The original struct remains unchanged, and setters provide a
 /// convenient way to set field values in a chainable manner.
 ///
@@ -31,9 +31,9 @@ use implementation::do_add_setters;
 ///
 /// # Example
 /// ```rust
-/// use useless_add_setters::add_setters;
+/// use useless_setter_maker::make_setters;
 ///
-/// #[add_setters]
+/// #[make_setters]
 /// #[derive(Debug, PartialEq, Default)]
 /// struct Foo {
 ///     bar: u16,
@@ -76,7 +76,7 @@ use implementation::do_add_setters;
 /// assert_eq!(foo, expected);
 /// ```
 #[proc_macro_attribute]
-pub fn add_setters(_: TokenStream, input: TokenStream) -> TokenStream {
+pub fn make_setters(_: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemStruct);
-    do_add_setters(input)
+    do_make_setters(input)
 }
