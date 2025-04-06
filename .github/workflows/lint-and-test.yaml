@@ -4,8 +4,8 @@ run-name: Linting and Testing by ${{ github.actor }}
 on:
   push:
     paths: ["src/**", crates/**, "Cargo.toml", ".pre-commit-config.yaml"]
-    tags: ["v*.*.*"]
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   lint-and-test:

@@ -6,8 +6,10 @@ on:
     tags: ["v*.*.*"]
 
 jobs:
+  lint-and-test:
+    uses: ./.github/workflows/check.yaml
+
   release:
-    needs: lint-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
