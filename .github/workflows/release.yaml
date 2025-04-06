@@ -3,8 +3,7 @@ run-name: Releasing by {{ github.actor }}
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    tags: ["v*.*.*"]
 
 jobs:
   release:
