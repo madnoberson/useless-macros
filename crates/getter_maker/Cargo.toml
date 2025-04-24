@@ -1,0 +1,17 @@
+[package]
+name = "useless_getter_maker"
+description = "Macro for generating getter methods."
+version = "0.1.0"
+
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+syn = { version = "2.0", features = ["full"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+
+[lib]
+proc-macro = true

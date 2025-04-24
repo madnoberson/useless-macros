@@ -20,8 +20,10 @@ edition.workspace = true
 rust-version.workspace = true
 
 [features]
-default = ["setter_maker"]
+default = ["setter_maker", "getter_maker"]
 setter_maker = ["useless_setter_maker"]
+getter_maker = ["useless_getter_maker"]
 
 [dependencies]
 useless_setter_maker = { version = "0.1.*", path = "crates/setter_maker", optional = true }
+useless_getter_maker = { version = "0.1.*", path = "crates/getter_maker", optional = true }
