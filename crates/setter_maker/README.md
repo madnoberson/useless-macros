@@ -15,6 +15,60 @@
     </a>
 </p>
 
+A procedural macro crate for generating builder-style setter methods for Rust structs, enabling a fluent, chainable API for initialization with customizable method names and visibility.
+
 ## License
 
 This project is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE) file for details.
+
+## Examples
+
+### Basic Usage
+```rust
+use useless_setter_maker::make_setters;
+
+#[make_setters]
+#[derive(Debug, PartialEq, Default)]
+struct Person {
+    name: String,
+    age: u8,
+}
+
+let person = Person::default()
+    .with_name("Alice")
+    .with_age(30 as u8);
+    
+assert_eq!(person.name, "Alice");
+assert_eq!(person.age, 30);
+```
+
+### Customizing Setters
+```rust
+use useless_setter_maker::make_setters;
+
+#[make_setters]
+#[derive(Debug, PartialEq, Default)]
+struct Config {
+    #[configure_setter(prefix = "set", visibility = "pub")]
+    host: String,
+    
+    #[configure_setter(suffix = "number", visibility = "pub(crate)")]
+    port: u16,
+    
+    #[configure_setter(name = "enable_logging")]
+    logging: bool,
+    
+    #[disable_setters]
+    internal: bool,
+}
+
+let config = Config::default()
+    .set_host("localhost")
+    .with_number(8080 as u16)
+    .enable_logging(true);
+    
+assert_eq!(config.host, "localhost");
+assert_eq!(config.port, 8080);
+assert_eq!(config.logging, true);
+assert_eq!(config.internal, false);
+```
