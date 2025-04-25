@@ -6,18 +6,16 @@ use quote::quote;
 use syn::Ident;
 
 use super::setter_configs::{
-    SetterConfig,
+    SetterConfigs,
     SetterVisibility,
 };
 
 pub fn make_setter_methods(
-    setter_configs: Vec<SetterConfig>,
+    setter_configs: SetterConfigs,
 ) -> Vec<TokenStream2> {
     let mut setter_methods: Vec<TokenStream2> = Vec::new();
 
-    for setter_config in setter_configs {
-        let field = setter_config.field();
-
+    for (field, setter_config) in setter_configs.iter() {
         let field_name = &field.ident;
         let field_type = &field.ty;
 

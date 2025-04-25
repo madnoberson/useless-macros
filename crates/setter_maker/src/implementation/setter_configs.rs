@@ -1,27 +1,37 @@
+use core::panic;
+use std::collections::HashMap;
+
 use syn::{
     Expr,
     Field,
     Fields,
     Lit,
-    Meta,
+    LitStr,
+    MetaNameValue,
+    Path,
+    Token,
+    punctuated::Punctuated,
 };
 
-const DISABLE_ATTRIBUTE: &str = "disable_setter";
-const NAME_ATTRIBUTE: &str = "setter_name";
-const PREFIX_ATTRIBUTE: &str = "setter_prefix";
-const SUFFIX_ATTRIBUTE: &str = "setter_suffix";
-const VISIBILITY_ATTRIBUTE: &str = "setter_visibility";
+const CONFIG_ATTRIBUTE: &str = "configure_setter";
+const DISABLE_ATTRIBUTE: &str = "disable_setters";
+
+const NAME_PARAM: &str = "name";
+const PREFIX_PARAM: &str = "prefix";
+const SUFFIX_PARAM: &str = "suffix";
+const VISIBILITY_PARAM: &str = "visibility";
 
 const DEFAULT_PREFIX: &str = "with";
-const ALLOWED_VISIBILITIES: [&str; 3] = ["pub", "pub(crate)", "private"];
 
-pub struct SetterConfig<'a> {
-    field: &'a Field,
+pub type SetterConfigs<'a> = HashMap<&'a Field, SetterConfig>;
+
+#[derive(Debug)]
+pub struct SetterConfig {
     name: String,
     visibility: SetterVisibility,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum SetterVisibility {
     Pub,
     PubForCrate,
@@ -41,11 +51,7 @@ impl TryFrom<String> for SetterVisibility {
     }
 }
 
-impl<'a> SetterConfig<'a> {
-    pub fn field(&self) -> &Field {
-        self.field
-    }
-
+impl SetterConfig {
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -55,12 +61,12 @@ impl<'a> SetterConfig<'a> {
     }
 }
 
-pub fn make_setter_configs(fields: &mut Fields) -> Vec<SetterConfig> {
+pub fn make_setter_configs(fields: &mut Fields) -> SetterConfigs {
     let fields = match fields {
         Fields::Named(fields) => &mut fields.named,
-        _ => panic!("`add_setters` only supports structs with named fields."),
+        _ => panic!("Macro supports only structs with named fields."),
     };
-    let mut setter_configs: Vec<SetterConfig> = Vec::new();
+    let mut setter_configs: SetterConfigs = SetterConfigs::new();
 
     for field in fields {
         let is_disabled = field
@@ -72,125 +78,116 @@ pub fn make_setter_configs(fields: &mut Fields) -> Vec<SetterConfig> {
             continue;
         }
 
-        let name = extract_name(field).unwrap_or_else(|| {
-            let prefix =
-                extract_prefix(field).unwrap_or(String::from(DEFAULT_PREFIX));
-            let suffix = extract_suffix(field)
-                .unwrap_or(field.ident.as_ref().unwrap().to_string());
-
-            format!("{prefix}_{suffix}")
-        });
-        let visibility = extract_visibility(field)
-            .map(|v| v.try_into().unwrap_or_else(|e| panic!("{}", e)))
-            .unwrap_or(SetterVisibility::Pub);
-
+        let setter_config = extract_config(field);
         remove_attributes(field);
-
-        let setter_config = SetterConfig {
-            field: field,
-            name: name,
-            visibility: visibility,
-        };
-        setter_configs.push(setter_config);
+        setter_configs.insert(field, setter_config);
     }
 
     setter_configs
 }
 
-fn extract_name(field: &Field) -> Option<String> {
+fn extract_config(field: &Field) -> SetterConfig {
     let attribute = field
         .attrs
         .iter()
-        .filter(|attr| attr.path().is_ident(NAME_ATTRIBUTE))
-        .last()?;
+        .filter(|attr| attr.path().is_ident(CONFIG_ATTRIBUTE))
+        .last();
 
-    if let Meta::NameValue(meta) = &attribute.meta {
-        if let Expr::Lit(expr) = &meta.value {
-            if let Lit::Str(lit_str) = &expr.lit {
-                return Some(lit_str.value());
+    if attribute.is_none() {
+        let field_name = field.ident.as_ref().unwrap().to_string();
+        let name = format!("{DEFAULT_PREFIX}_{field_name}");
+        return SetterConfig {
+            name,
+            visibility: SetterVisibility::Pub,
+        };
+    }
+
+    let name_values: Punctuated<MetaNameValue, Token![,]> = attribute
+        .unwrap()
+        .parse_args_with(Punctuated::parse_terminated)
+        .expect("Inalid attribute syntax.");
+
+    let mut name: Option<String> = None;
+    let mut prefix: Option<String> = None;
+    let mut suffix: Option<String> = None;
+    let mut raw_visibility: Option<String> = None;
+
+    for name_value in name_values {
+        if let Expr::Lit(lit_expr) = name_value.value {
+            if let Lit::Str(lit_str) = lit_expr.lit {
+                parse_attribute_param(
+                    name_value.path,
+                    lit_str,
+                    &mut name,
+                    &mut prefix,
+                    &mut suffix,
+                    &mut raw_visibility,
+                );
             }
         }
     }
 
-    panic!(
-        "'{0}' attribute must have #[{0} = \"<name>\"] format.",
-        NAME_ATTRIBUTE,
-    );
+    match (name.as_ref(), prefix.as_ref(), suffix.as_ref()) {
+        (None, Some(prefix), Some(suffix)) => {
+            let new_name = format!("{prefix}_{suffix}");
+            name = Some(new_name);
+        }
+        (None, Some(prefix), None) => {
+            let field_name = field.ident.as_ref().unwrap().to_string();
+            let new_name = format!("{prefix}_{field_name}");
+            name = Some(new_name);
+        }
+        (None, None, Some(suffix)) => {
+            let new_name = format!("{DEFAULT_PREFIX}_{suffix}");
+            name = Some(new_name);
+        }
+        (None, None, None) => {
+            let field_name = field.ident.as_ref().unwrap().to_string();
+            let new_name = format!("{DEFAULT_PREFIX}_{field_name}");
+            name = Some(new_name);
+        }
+        (Some(_), _, _) => {}
+    }
+
+    let visibility = match raw_visibility {
+        Some(raw_visibility) => {
+            SetterVisibility::try_from(raw_visibility.clone())
+                .expect("Invalid visibility.")
+        }
+        None => SetterVisibility::Pub,
+    };
+
+    SetterConfig {
+        name: name.unwrap(),
+        visibility,
+    }
 }
 
-fn extract_prefix(field: &Field) -> Option<String> {
-    let attribute = field
-        .attrs
-        .iter()
-        .filter(|attr| attr.path().is_ident(PREFIX_ATTRIBUTE))
-        .last()?;
+fn parse_attribute_param(
+    param_path: Path,
+    param_value: LitStr,
+    name: &mut Option<String>,
+    prefix: &mut Option<String>,
+    suffix: &mut Option<String>,
+    raw_visibility: &mut Option<String>,
+) {
+    let param_name = param_path
+        .get_ident()
+        .expect("Invalid attribute.")
+        .to_string();
 
-    if let Meta::NameValue(meta) = &attribute.meta {
-        if let Expr::Lit(expr) = &meta.value {
-            if let Lit::Str(lit_str) = &expr.lit {
-                return Some(lit_str.value());
-            }
-        }
-    }
-
-    panic!(
-        "'{0}' attribute must have #[{0} = \"<prefix>\"] format.",
-        PREFIX_ATTRIBUTE,
-    );
-}
-
-fn extract_suffix(field: &Field) -> Option<String> {
-    let attribute = field
-        .attrs
-        .iter()
-        .filter(|attr| attr.path().is_ident(SUFFIX_ATTRIBUTE))
-        .last()?;
-
-    if let Meta::NameValue(meta) = &attribute.meta {
-        if let Expr::Lit(expr) = &meta.value {
-            if let Lit::Str(lit_str) = &expr.lit {
-                return Some(lit_str.value());
-            }
-        }
-    }
-
-    panic!(
-        "'{0}' attribute must have #[{0} = \"<suffix>\"] format.",
-        SUFFIX_ATTRIBUTE,
-    );
-}
-
-fn extract_visibility(field: &Field) -> Option<String> {
-    let attribute = field
-        .attrs
-        .iter()
-        .filter(|attr| attr.path().is_ident(VISIBILITY_ATTRIBUTE))
-        .last()?;
-
-    if let Meta::NameValue(meta) = &attribute.meta {
-        if let Expr::Lit(expr) = &meta.value {
-            if let Lit::Str(lit_str) = &expr.lit {
-                return Some(lit_str.value());
-            }
-        }
-    }
-
-    panic!(
-        "'{0}' attribute must have #[{0} = \"<visibility>\"] format, \
-        where <visibility> must be one of ({1}).",
-        VISIBILITY_ATTRIBUTE,
-        ALLOWED_VISIBILITIES.join(", "),
-    );
+    match param_name.as_str() {
+        NAME_PARAM => name.insert(param_value.value()),
+        PREFIX_PARAM => prefix.insert(param_value.value()),
+        SUFFIX_PARAM => suffix.insert(param_value.value()),
+        VISIBILITY_PARAM => raw_visibility.insert(param_value.value()),
+        _ => panic!("Invalid param of attribute."),
+    };
 }
 
 fn remove_attributes(field: &mut Field) {
     field.attrs.retain(|attr| {
         let path = attr.path();
-
-        !(path.is_ident(DISABLE_ATTRIBUTE)
-            || path.is_ident(NAME_ATTRIBUTE)
-            || path.is_ident(PREFIX_ATTRIBUTE)
-            || path.is_ident(SUFFIX_ATTRIBUTE)
-            || path.is_ident(VISIBILITY_ATTRIBUTE))
+        !(path.is_ident(DISABLE_ATTRIBUTE) || path.is_ident(CONFIG_ATTRIBUTE))
     });
 }

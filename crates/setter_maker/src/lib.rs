@@ -18,16 +18,22 @@ use implementation::do_make_setters;
 /// convenient way to set field values in a chainable manner.
 ///
 /// ### Customization Options
-/// - `#[disable_setter]`: Skip setter generation for a specific field.
-/// - `#[setter_prefix = "prefix"]`: Override the default `with` prefix.
-/// - `#[setter_suffix = "suffix"]`: Customize the suffix
-///    (defaults to field name).
-/// - `#[setter_name = "name"]`: Set a custom method name, overriding
-///    prefix/suffix.
-/// - `#[setter_visibility = "<vis>"]`: Control method visibility:
-///   - `pub`: Public access (default).
-///   - `pub(crate)`: Crate-only access.
-///   - `private`: Private access.
+/// - `#[disable_setters]`: Skip setter generation for a specific field.
+///
+/// - `#[configure_setter(
+///       name = "name",
+///       visibility = "<vis>",
+///       prefix = "prefix",
+///       suffix = "suffix"
+///    )]`:
+///   Configure the setter with the following options:
+///   - `name`: Set a custom method name, overriding prefix/suffix.
+///   - `visibility`: Control method visibility:
+///     - `pub`: Public access (default).
+///     - `pub(crate)`: Crate-only access.
+///     - `private`: Private access.
+///   - `prefix`: Override the default `with` prefix.
+///   - `suffix`: Customize the suffix (defaults to field name).
 ///
 /// # Example
 /// ```rust
@@ -38,30 +44,26 @@ use implementation::do_make_setters;
 /// struct Foo {
 ///     bar: u16,
 ///
-///     #[setter_prefix = "set"]
-///     #[setter_visibility = "pub"]
+///     #[configure_setter(prefix = "set", visibility = "pub")]
 ///     baz: String,
 ///
-///     #[disable_setter]
+///     #[disable_setters]
 ///     foobar: bool,
 ///
-///     #[setter_suffix = "fb"]
-///     #[setter_visibility = "pub(crate)"]
+///     #[configure_setter(suffix = "fb", visibility = "pub(crate)")]
 ///     foobaz: bool,
 ///
-///     #[setter_prefix = "provide"]
-///     #[setter_suffix = "bb"]
+///     #[configure_setter(prefix = "provide", suffix = "bb")]
 ///     barbaz: String,
 ///
-///     #[setter_name = "install_bazfoo"]
-///     #[setter_visibility = "private"]
+///     #[configure_setter(name = "install_bazfoo", visibility = "private")]
 ///     bazfoo: String,
 /// }
 ///
 /// let foo = Foo::default()
 ///     .with_bar(100 as u16)       // Public
 ///     .set_baz("some_text")       // Public
-///     .with_fb(true)              // Pub(crate)
+///     .with_fb(true)              // Public(crate)
 ///     .provide_bb("other_text")   // Public
 ///     .install_bazfoo("bazfoo");  // Private
 ///
