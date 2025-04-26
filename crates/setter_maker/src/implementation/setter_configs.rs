@@ -3,9 +3,11 @@ use std::collections::HashMap;
 
 use proc_macro2::Span as Span2;
 use syn::{
+    Attribute,
     Expr,
     Field,
     Fields,
+    Ident,
     Lit,
     LitStr,
     MetaNameValue,
@@ -26,7 +28,7 @@ const VISIBILITY_PARAM: &str = "visibility";
 
 const DEFAULT_PREFIX: &str = "with";
 
-pub type SetterConfigs<'a> = HashMap<&'a Field, SetterConfig>;
+pub type SetterConfigs<'a> = HashMap<&'a Field, Vec<SetterConfig>>;
 
 #[derive(Debug)]
 pub struct SetterConfig {
@@ -62,31 +64,44 @@ pub fn make_setter_configs(fields: &mut Fields) -> SetterConfigs {
             continue;
         }
 
-        let setter_config = extract_config(field);
+        let field_setter_configs = extract_configs(field);
         remove_attributes(field);
-        setter_configs.insert(field, setter_config);
+        setter_configs.insert(field, field_setter_configs);
     }
 
     setter_configs
 }
 
-fn extract_config(field: &Field) -> SetterConfig {
-    let attribute = field
+/// Extracts configs from config attributes of field and returns
+/// them. If field has no attribute, this function returns Vec
+/// with a default config.
+fn extract_configs(field: &Field) -> Vec<SetterConfig> {
+    let attributes: Vec<&Attribute> = field
         .attrs
         .iter()
         .filter(|attr| attr.path().is_ident(CONFIG_ATTRIBUTE))
-        .last();
+        .collect();
 
-    if attribute.is_none() {
+    if attributes.len() == 0 {
         let name = default_name_factory(field);
         let visibility = default_visibility_factory();
-        return SetterConfig { name, visibility };
+        return vec![SetterConfig { name, visibility }];
     }
 
+    let mut setter_configs: Vec<SetterConfig> = Vec::new();
+    for attribute in attributes {
+        let field_ident = field.ident.as_ref().unwrap();
+        let setter_config = extract_config(field_ident, attribute);
+        setter_configs.push(setter_config);
+    }
+
+    setter_configs
+}
+
+fn extract_config(field_ident: &Ident, attribute: &Attribute) -> SetterConfig {
     let name_values: Punctuated<MetaNameValue, Token![,]> = attribute
-        .unwrap()
         .parse_args_with(Punctuated::parse_terminated)
-        .expect("Inalid attribute syntax.");
+        .expect("Invalid attribute.");
 
     let mut name: Option<String> = None;
     let mut prefix: Option<String> = None;
@@ -114,7 +129,7 @@ fn extract_config(field: &Field) -> SetterConfig {
             name = Some(new_name);
         }
         (None, Some(prefix), None) => {
-            let field_name = field.ident.as_ref().unwrap().to_string();
+            let field_name = field_ident.to_string();
             let new_name = format!("{prefix}_{field_name}");
             name = Some(new_name);
         }
@@ -123,7 +138,7 @@ fn extract_config(field: &Field) -> SetterConfig {
             name = Some(new_name);
         }
         (None, None, None) => {
-            let field_name = field.ident.as_ref().unwrap().to_string();
+            let field_name = field_ident.to_string();
             let new_name = format!("{DEFAULT_PREFIX}_{field_name}");
             name = Some(new_name);
         }

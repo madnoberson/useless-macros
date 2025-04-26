@@ -18,6 +18,9 @@ use implementation::do_make_setters;
 /// The original struct remains unchanged, and setters provide a
 /// convenient way to set field values in a chainable manner.
 ///
+/// Multiple `#[configure_setter]` attributes can be applied to a single field,
+/// generating multiple setter methods with the specified configurations.
+///
 /// ### Customization Options
 /// - `#[disable_setters]`: Skip setter generation for a specific field.
 ///
@@ -30,8 +33,8 @@ use implementation::do_make_setters;
 ///
 ///   Configure the setter with the following options:
 ///   - `name`: Set a custom method name, overriding prefix/suffix.
-///   - `visibility`: Override method visibility. Set this to "" to
-///      make method visibility pub(self). Default: pub.
+///   - `visibility`: Override method visibility. Set to "" for
+///      `pub(self)`. Default: `pub`.
 ///   - `prefix`: Override the prefix. Default: "with".
 ///   - `suffix`: Override the suffix. Default: field name.
 ///
@@ -45,6 +48,7 @@ use implementation::do_make_setters;
 ///     bar: u16,
 ///
 ///     #[configure_setter(prefix = "set", visibility = "pub")]
+///     #[configure_setter(name = "install_baz", visibility = "pub(crate)")]
 ///     baz: String,
 ///
 ///     #[disable_setters]
@@ -62,7 +66,8 @@ use implementation::do_make_setters;
 ///
 /// let foo = Foo::default()
 ///     .with_bar(100 as u16)       // Pub
-///     .set_baz("some_text")       // Pub
+///     .set_baz("some_text")       // Pub, first setter for baz
+///     .install_baz("some_text")   // Pub(crate), second setter for baz
 ///     .with_fb(true)              // Pub(crate)
 ///     .provide_bb("other_text")   // Pub
 ///     .install_bazfoo("bazfoo");  // Pub(self)

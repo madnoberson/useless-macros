@@ -56,6 +56,7 @@ struct Config {
     port: u16,
     
     #[configure_setter(name = "enable_logging")]
+    #[configure_setter(name = "install_logging")]
     logging: bool,
     
     #[disable_setters]
@@ -65,7 +66,8 @@ struct Config {
 let config = Config::default()
     .set_host("localhost")
     .with_number(8080 as u16)
-    .enable_logging(true);
+    .enable_logging(true)
+    .install_logging(true);
     
 assert_eq!(config.host, "localhost");
 assert_eq!(config.port, 8080);
