@@ -22,19 +22,18 @@ use implementation::do_make_setters;
 /// - `#[disable_setters]`: Skip setter generation for a specific field.
 ///
 /// - `#[configure_setter(
-///       name = "name",
+///       name = "<name>",
 ///       visibility = "<vis>",
-///       prefix = "prefix",
-///       suffix = "suffix"
+///       prefix = "<prefix>",
+///       suffix = "<suffix>"
 ///    )]`:
+///
 ///   Configure the setter with the following options:
 ///   - `name`: Set a custom method name, overriding prefix/suffix.
-///   - `visibility`: Control method visibility:
-///     - `pub`: Public access (default).
-///     - `pub(crate)`: Crate-only access.
-///     - `private`: Private access.
-///   - `prefix`: Override the default `with` prefix.
-///   - `suffix`: Customize the suffix (defaults to field name).
+///   - `visibility`: Override method visibility. Set this to "" to
+///      make method visibility pub(self). Default: pub.
+///   - `prefix`: Override the prefix. Default: "with".
+///   - `suffix`: Override the suffix. Default: field name.
 ///
 /// # Example
 /// ```rust
@@ -57,16 +56,16 @@ use implementation::do_make_setters;
 ///     #[configure_setter(prefix = "provide", suffix = "bb")]
 ///     barbaz: String,
 ///
-///     #[configure_setter(name = "install_bazfoo", visibility = "private")]
+///     #[configure_setter(name = "install_bazfoo", visibility = "")]
 ///     bazfoo: String,
 /// }
 ///
 /// let foo = Foo::default()
-///     .with_bar(100 as u16)       // Public
-///     .set_baz("some_text")       // Public
-///     .with_fb(true)              // Public(crate)
-///     .provide_bb("other_text")   // Public
-///     .install_bazfoo("bazfoo");  // Private
+///     .with_bar(100 as u16)       // Pub
+///     .set_baz("some_text")       // Pub
+///     .with_fb(true)              // Pub(crate)
+///     .provide_bb("other_text")   // Pub
+///     .install_bazfoo("bazfoo");  // Pub(self)
 ///
 /// let expected = Foo {
 ///     bar: 100,

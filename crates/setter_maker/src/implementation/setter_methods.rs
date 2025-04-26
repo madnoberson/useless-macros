@@ -5,10 +5,7 @@ use proc_macro2::{
 use quote::quote;
 use syn::Ident;
 
-use super::setter_configs::{
-    SetterConfigs,
-    SetterVisibility,
-};
+use super::setter_configs::SetterConfigs;
 
 pub fn make_setter_methods(
     setter_configs: SetterConfigs,
@@ -20,12 +17,7 @@ pub fn make_setter_methods(
         let field_type = &field.ty;
 
         let method_name = Ident::new(setter_config.name(), Span2::call_site());
-
-        let method_visibility = match setter_config.visibility() {
-            SetterVisibility::Pub => Some(quote! { pub }),
-            SetterVisibility::PubForCrate => Some(quote! { pub(crate) }),
-            SetterVisibility::Private => None,
-        };
+        let method_visibility = setter_config.visibility();
 
         let setter_method = quote! {
             #[must_use]

@@ -1,6 +1,7 @@
 use core::panic;
 use std::collections::HashMap;
 
+use proc_macro2::Span as Span2;
 use syn::{
     Expr,
     Field,
@@ -10,6 +11,8 @@ use syn::{
     MetaNameValue,
     Path,
     Token,
+    Visibility,
+    parse_str,
     punctuated::Punctuated,
 };
 
@@ -28,27 +31,7 @@ pub type SetterConfigs<'a> = HashMap<&'a Field, SetterConfig>;
 #[derive(Debug)]
 pub struct SetterConfig {
     name: String,
-    visibility: SetterVisibility,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum SetterVisibility {
-    Pub,
-    PubForCrate,
-    Private,
-}
-
-impl TryFrom<String> for SetterVisibility {
-    type Error = String;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.as_str() {
-            "pub" => Ok(Self::Pub),
-            "pub(crate)" => Ok(Self::PubForCrate),
-            "private" => Ok(Self::Private),
-            _ => Err(format!("Invalid visibility: '{value}'.")),
-        }
-    }
+    visibility: Visibility,
 }
 
 impl SetterConfig {
@@ -56,8 +39,8 @@ impl SetterConfig {
         &self.name
     }
 
-    pub fn visibility(&self) -> SetterVisibility {
-        self.visibility
+    pub fn visibility(&self) -> &Visibility {
+        &self.visibility
     }
 }
 
@@ -73,6 +56,7 @@ pub fn make_setter_configs(fields: &mut Fields) -> SetterConfigs {
             .attrs
             .iter()
             .any(|attr| attr.path().is_ident(DISABLE_ATTRIBUTE));
+
         if is_disabled {
             remove_attributes(field);
             continue;
@@ -94,12 +78,9 @@ fn extract_config(field: &Field) -> SetterConfig {
         .last();
 
     if attribute.is_none() {
-        let field_name = field.ident.as_ref().unwrap().to_string();
-        let name = format!("{DEFAULT_PREFIX}_{field_name}");
-        return SetterConfig {
-            name,
-            visibility: SetterVisibility::Pub,
-        };
+        let name = default_name_factory(field);
+        let visibility = default_visibility_factory();
+        return SetterConfig { name, visibility };
     }
 
     let name_values: Punctuated<MetaNameValue, Token![,]> = attribute
@@ -149,12 +130,11 @@ fn extract_config(field: &Field) -> SetterConfig {
         (Some(_), _, _) => {}
     }
 
-    let visibility = match raw_visibility {
+    let visibility = match raw_visibility.as_ref() {
         Some(raw_visibility) => {
-            SetterVisibility::try_from(raw_visibility.clone())
-                .expect("Invalid visibility.")
+            parse_str(raw_visibility).expect("Invalid visibility.")
         }
-        None => SetterVisibility::Pub,
+        None => default_visibility_factory(),
     };
 
     SetterConfig {
@@ -183,6 +163,17 @@ fn parse_attribute_param(
         VISIBILITY_PARAM => raw_visibility.insert(param_value.value()),
         _ => panic!("Invalid param of attribute."),
     };
+}
+
+fn default_name_factory(field: &Field) -> String {
+    let field_name = field.ident.as_ref().unwrap().to_string();
+    format!("{DEFAULT_PREFIX}_{field_name}")
+}
+
+fn default_visibility_factory() -> Visibility {
+    let call_site = Span2::call_site();
+    let pub_token = Token![pub](call_site);
+    Visibility::Public(pub_token)
 }
 
 fn remove_attributes(field: &mut Field) {
