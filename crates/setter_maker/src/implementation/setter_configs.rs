@@ -76,21 +76,22 @@ pub fn make_setter_configs(fields: &mut Fields) -> SetterConfigs {
 /// them. If field has no attribute, this function returns Vec
 /// with a default config.
 fn extract_configs(field: &Field) -> Vec<SetterConfig> {
+    let field_ident = field.ident.as_ref().unwrap();
+
     let attributes: Vec<&Attribute> = field
         .attrs
         .iter()
         .filter(|attr| attr.path().is_ident(CONFIG_ATTRIBUTE))
         .collect();
 
-    if attributes.len() == 0 {
-        let name = default_name_factory(field);
+    if attributes.is_empty() {
+        let name = format!("{DEFAULT_PREFIX}_{field_ident}");
         let visibility = default_visibility_factory();
         return vec![SetterConfig { name, visibility }];
     }
 
     let mut setter_configs: Vec<SetterConfig> = Vec::new();
     for attribute in attributes {
-        let field_ident = field.ident.as_ref().unwrap();
         let setter_config = extract_config(field_ident, attribute);
         setter_configs.push(setter_config);
     }
@@ -180,14 +181,9 @@ fn parse_attribute_param(
     };
 }
 
-fn default_name_factory(field: &Field) -> String {
-    let field_name = field.ident.as_ref().unwrap().to_string();
-    format!("{DEFAULT_PREFIX}_{field_name}")
-}
-
 fn default_visibility_factory() -> Visibility {
-    let call_site = Span2::call_site();
-    let pub_token = Token![pub](call_site);
+    let span = Span2::call_site();
+    let pub_token = Token![pub](span);
     Visibility::Public(pub_token)
 }
 
