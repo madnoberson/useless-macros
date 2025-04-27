@@ -102,7 +102,7 @@ fn extract_configs(field: &Field) -> Vec<SetterConfig> {
 fn extract_config(field_ident: &Ident, attribute: &Attribute) -> SetterConfig {
     let name_values: Punctuated<MetaNameValue, Token![,]> = attribute
         .parse_args_with(Punctuated::parse_terminated)
-        .expect("Invalid attribute.");
+        .unwrap();
 
     let mut name: Option<String> = None;
     let mut prefix: Option<String> = None;
@@ -124,39 +124,12 @@ fn extract_config(field_ident: &Ident, attribute: &Attribute) -> SetterConfig {
         }
     }
 
-    match (name.as_ref(), prefix.as_ref(), suffix.as_ref()) {
-        (None, Some(prefix), Some(suffix)) => {
-            let new_name = format!("{prefix}_{suffix}");
-            name = Some(new_name);
-        }
-        (None, Some(prefix), None) => {
-            let field_name = field_ident.to_string();
-            let new_name = format!("{prefix}_{field_name}");
-            name = Some(new_name);
-        }
-        (None, None, Some(suffix)) => {
-            let new_name = format!("{DEFAULT_PREFIX}_{suffix}");
-            name = Some(new_name);
-        }
-        (None, None, None) => {
-            let field_name = field_ident.to_string();
-            let new_name = format!("{DEFAULT_PREFIX}_{field_name}");
-            name = Some(new_name);
-        }
-        (Some(_), _, _) => {}
-    }
-
+    let name = make_name(name, prefix, suffix, field_ident);
     let visibility = match raw_visibility.as_ref() {
-        Some(raw_visibility) => {
-            parse_str(raw_visibility).expect("Invalid visibility.")
-        }
+        Some(raw_visibility) => parse_str(raw_visibility).unwrap(),
         None => default_visibility_factory(),
     };
-
-    SetterConfig {
-        name: name.unwrap(),
-        visibility,
-    }
+    SetterConfig { name, visibility }
 }
 
 fn parse_attribute_param(
@@ -167,18 +140,44 @@ fn parse_attribute_param(
     suffix: &mut Option<String>,
     raw_visibility: &mut Option<String>,
 ) {
-    let param_name = param_path
-        .get_ident()
-        .expect("Invalid attribute.")
-        .to_string();
+    let param_name = param_path.get_ident().unwrap().to_string();
 
     match param_name.as_str() {
         NAME_PARAM => name.insert(param_value.value()),
         PREFIX_PARAM => prefix.insert(param_value.value()),
         SUFFIX_PARAM => suffix.insert(param_value.value()),
         VISIBILITY_PARAM => raw_visibility.insert(param_value.value()),
-        _ => panic!("Invalid param of attribute."),
+        _ => panic!("Unexpected param."),
     };
+}
+
+fn make_name(
+    name: Option<String>,
+    prefix: Option<String>,
+    suffix: Option<String>,
+    field_ident: &Ident,
+) -> String {
+    let field_name = field_ident.to_string();
+
+    match (name, prefix, suffix) {
+        (None, Some(prefix), Some(suffix)) => format!("{prefix}_{suffix}"),
+        (None, Some(prefix), None) => format!("{prefix}_{field_name}"),
+        (None, None, Some(suffix)) => format!("{DEFAULT_PREFIX}_{suffix}"),
+        (None, None, None) => format!("{DEFAULT_PREFIX}_{field_name}"),
+        (Some(_), Some(_), Some(_)) => panic!(
+            "'{NAME_PARAM}' param cannot be set with \
+            {PREFIX_PARAM} and {SUFFIX_PARAM} params."
+        ),
+        (Some(_), Some(_), None) => panic!(
+            "'{NAME_PARAM}' param cannot be set with \
+            {PREFIX_PARAM} param."
+        ),
+        (Some(_), None, Some(_)) => panic!(
+            "{NAME_PARAM} param cannot be set with \
+            {SUFFIX_PARAM} param."
+        ),
+        (Some(name), None, None) => name,
+    }
 }
 
 fn default_visibility_factory() -> Visibility {
