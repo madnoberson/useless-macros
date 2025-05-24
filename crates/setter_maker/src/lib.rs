@@ -62,6 +62,8 @@ use implementation::do_make_setters;
 ///
 ///     #[configure_setter(name = "install_bazfoo", visibility = "")]
 ///     bazfoo: String,
+///
+///     bazbaz: Option<u16>,
 /// }
 ///
 /// let foo = Foo::default()
@@ -70,7 +72,8 @@ use implementation::do_make_setters;
 ///     .install_baz("some_text")   // Pub(crate), second setter for baz
 ///     .with_fb(true)              // Pub(crate)
 ///     .provide_bb("other_text")   // Pub
-///     .install_bazfoo("bazfoo");  // Pub(self)
+///     .install_bazfoo("bazfoo")   // Pub(self)
+///     .with_bazbaz(120 as u16);   // Pub   
 ///
 /// let expected = Foo {
 ///     bar: 100,
@@ -79,6 +82,7 @@ use implementation::do_make_setters;
 ///     foobaz: true,
 ///     barbaz: String::from("other_text"),
 ///     bazfoo: String::from("bazfoo"),
+///     bazbaz: Some(120),
 /// };
 /// assert_eq!(foo, expected);
 /// ```

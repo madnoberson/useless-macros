@@ -61,16 +61,20 @@ struct Config {
     
     #[disable_setters]
     internal: bool,
+
+    updated_at: Option<String>,
 }
 
 let config = Config::default()
     .set_host("localhost")
     .with_number(8080 as u16)
     .enable_logging(true)
-    .install_logging(true);
+    .install_logging(true)
+    .with_updated_at("today");
     
 assert_eq!(config.host, "localhost");
 assert_eq!(config.port, 8080);
 assert_eq!(config.logging, true);
 assert_eq!(config.internal, false);
+assert_eq!(config.updated_at, Some(String::from("today")));
 ```
