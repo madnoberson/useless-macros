@@ -1,5 +1,5 @@
-use core::panic;
 use std::collections::HashMap;
+use std::panic;
 
 use proc_macro2::Span as Span2;
 use syn::{
@@ -9,7 +9,6 @@ use syn::{
     Fields,
     Ident,
     Lit,
-    LitStr,
     MetaNameValue,
     Path,
     Token,
@@ -25,6 +24,7 @@ const NAME_PARAM: &str = "name";
 const PREFIX_PARAM: &str = "prefix";
 const SUFFIX_PARAM: &str = "suffix";
 const VISIBILITY_PARAM: &str = "visibility";
+const WITH_INTO_PARAM: &str = "with_into";
 
 const DEFAULT_PREFIX: &str = "with";
 
@@ -34,6 +34,7 @@ pub type SetterConfigs<'a> = HashMap<&'a Field, Vec<SetterConfig>>;
 pub struct SetterConfig {
     name: String,
     visibility: Visibility,
+    with_into: bool,
 }
 
 impl SetterConfig {
@@ -43,6 +44,10 @@ impl SetterConfig {
 
     pub fn visibility(&self) -> &Visibility {
         &self.visibility
+    }
+
+    pub fn with_into(&self) -> bool {
+        self.with_into
     }
 }
 
@@ -87,7 +92,13 @@ fn extract_configs(field: &Field) -> Vec<SetterConfig> {
     if attributes.is_empty() {
         let name = format!("{DEFAULT_PREFIX}_{field_ident}");
         let visibility = default_visibility_factory();
-        return vec![SetterConfig { name, visibility }];
+        let with_into = true;
+
+        return vec![SetterConfig {
+            name,
+            visibility,
+            with_into,
+        }];
     }
 
     let mut setter_configs: Vec<SetterConfig> = Vec::new();
@@ -108,19 +119,19 @@ fn extract_config(field_ident: &Ident, attribute: &Attribute) -> SetterConfig {
     let mut prefix: Option<String> = None;
     let mut suffix: Option<String> = None;
     let mut raw_visibility: Option<String> = None;
+    let mut with_into: Option<bool> = None;
 
     for name_value in name_values {
         if let Expr::Lit(lit_expr) = name_value.value {
-            if let Lit::Str(lit_str) = lit_expr.lit {
-                parse_attribute_param(
-                    name_value.path,
-                    lit_str,
-                    &mut name,
-                    &mut prefix,
-                    &mut suffix,
-                    &mut raw_visibility,
-                );
-            }
+            parse_attribute_param(
+                name_value.path,
+                lit_expr.lit,
+                &mut name,
+                &mut prefix,
+                &mut suffix,
+                &mut raw_visibility,
+                &mut with_into,
+            );
         }
     }
 
@@ -129,25 +140,43 @@ fn extract_config(field_ident: &Ident, attribute: &Attribute) -> SetterConfig {
         Some(raw_visibility) => parse_str(raw_visibility).unwrap(),
         None => default_visibility_factory(),
     };
-    SetterConfig { name, visibility }
+    let with_into = with_into.unwrap_or(true);
+
+    SetterConfig {
+        name,
+        visibility,
+        with_into,
+    }
 }
 
 fn parse_attribute_param(
     param_path: Path,
-    param_value: LitStr,
+    param_value: Lit,
     name: &mut Option<String>,
     prefix: &mut Option<String>,
     suffix: &mut Option<String>,
     raw_visibility: &mut Option<String>,
+    with_into: &mut Option<bool>,
 ) {
     let param_name = param_path.get_ident().unwrap().to_string();
 
-    match param_name.as_str() {
-        NAME_PARAM => name.insert(param_value.value()),
-        PREFIX_PARAM => prefix.insert(param_value.value()),
-        SUFFIX_PARAM => suffix.insert(param_value.value()),
-        VISIBILITY_PARAM => raw_visibility.insert(param_value.value()),
-        _ => panic!("Unexpected param."),
+    match param_value {
+        Lit::Str(param_value) => {
+            match param_name.as_str() {
+                NAME_PARAM => name.insert(param_value.value()),
+                PREFIX_PARAM => prefix.insert(param_value.value()),
+                SUFFIX_PARAM => suffix.insert(param_value.value()),
+                VISIBILITY_PARAM => raw_visibility.insert(param_value.value()),
+                _ => panic!("Unexpected param."),
+            };
+        }
+        Lit::Bool(param_value) => {
+            match param_name.as_str() {
+                WITH_INTO_PARAM => with_into.insert(param_value.value()),
+                _ => panic!("Unexpected param."),
+            };
+        }
+        _ => panic!("Unexpected value type."),
     };
 }
 

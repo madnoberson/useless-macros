@@ -28,15 +28,18 @@ use implementation::do_make_setters;
 ///       name = "<name>",
 ///       visibility = "<vis>",
 ///       prefix = "<prefix>",
-///       suffix = "<suffix>"
+///       suffix = "<suffix>",
+///       with_into = true|false,
 ///    )]`:
 ///
 ///   Configure the setter with the following options:
 ///   - `name`: Set a custom method name, overriding prefix/suffix.
 ///   - `visibility`: Override method visibility. Set to "" for
-///      `pub(self)`. Default: `pub`.
+///     `pub(self)`. Default: `pub`.
 ///   - `prefix`: Override the prefix. Default: "with".
 ///   - `suffix`: Override the suffix. Default: field name.
+///   - `with_into`: Whether to use the impl Into<T> in method
+///      parameters. Default: true.
 ///
 /// # Example
 /// ```rust
@@ -63,17 +66,18 @@ use implementation::do_make_setters;
 ///     #[configure_setter(name = "install_bazfoo", visibility = "")]
 ///     bazfoo: String,
 ///
-///     bazbaz: Option<u16>,
+///     #[configure_setter(with_into = false)]
+///     bazbaz: Option<String>,
 /// }
 ///
 /// let foo = Foo::default()
-///     .with_bar(100 as u16)       // Pub
-///     .set_baz("some_text")       // Pub, first setter for baz
-///     .install_baz("some_text")   // Pub(crate), second setter for baz
-///     .with_fb(true)              // Pub(crate)
-///     .provide_bb("other_text")   // Pub
-///     .install_bazfoo("bazfoo")   // Pub(self)
-///     .with_bazbaz(120 as u16);   // Pub   
+///     .with_bar(100 as u16)                      // Pub
+///     .set_baz("some_text")                      // Pub, first setter for baz
+///     .install_baz("some_text")                  // Pub(crate), second setter for baz
+///     .with_fb(true)                             // Pub(crate)
+///     .provide_bb("other_text")                  // Pub
+///     .install_bazfoo("bazfoo")                  // Pub(self)
+///     .with_bazbaz(String::from("some_text"));   // Pub   
 ///
 /// let expected = Foo {
 ///     bar: 100,
@@ -82,7 +86,7 @@ use implementation::do_make_setters;
 ///     foobaz: true,
 ///     barbaz: String::from("other_text"),
 ///     bazfoo: String::from("bazfoo"),
-///     bazbaz: Some(120),
+///     bazbaz: Some(String::from("some_text")),
 /// };
 /// assert_eq!(foo, expected);
 /// ```

@@ -25,31 +25,58 @@ pub fn make_setter_methods(
         for field_setter_config in field_setter_configs {
             let method_name = Ident::new(field_setter_config.name(), span);
             let method_visibility = field_setter_config.visibility();
+            let with_into = field_setter_config.with_into();
 
             let option_inner_type = extract_option_inner_type(field_type);
 
             let setter_method = match option_inner_type {
                 Some(inner_type) => {
-                    quote! {
-                        #[must_use]
-                        #method_visibility fn #method_name(
-                            mut self,
-                            #field_name: impl Into<#inner_type>,
-                        ) -> Self {
-                            self.#field_name = Some(#field_name.into());
-                            self
+                    if with_into {
+                        quote! {
+                            #[must_use]
+                            #method_visibility fn #method_name(
+                                mut self,
+                                #field_name: impl Into<#inner_type>,
+                            ) -> Self {
+                                self.#field_name = Some(#field_name.into());
+                                self
+                            }
+                        }
+                    } else {
+                        quote! {
+                            #[must_use]
+                            #method_visibility fn #method_name(
+                                mut self,
+                                #field_name: #inner_type,
+                            ) -> Self {
+                                self.#field_name = Some(#field_name);
+                                self
+                            }
                         }
                     }
                 }
                 None => {
-                    quote! {
-                        #[must_use]
-                        #method_visibility fn #method_name(
-                            mut self,
-                            #field_name: impl Into<#field_type>,
-                        ) -> Self {
-                            self.#field_name = #field_name.into();
-                            self
+                    if with_into {
+                        quote! {
+                            #[must_use]
+                            #method_visibility fn #method_name(
+                                mut self,
+                                #field_name: impl Into<#field_type>,
+                            ) -> Self {
+                                self.#field_name = #field_name.into();
+                                self
+                            }
+                        }
+                    } else {
+                        quote! {
+                            #[must_use]
+                            #method_visibility fn #method_name(
+                                mut self,
+                                #field_name: #field_type,
+                            ) -> Self {
+                                self.#field_name = #field_name;
+                                self
+                            }
                         }
                     }
                 }
@@ -61,7 +88,7 @@ pub fn make_setter_methods(
     setter_methods
 }
 
-pub fn extract_option_inner_type(field_type: &Type) -> Option<&Type> {
+fn extract_option_inner_type(field_type: &Type) -> Option<&Type> {
     if let Type::Path(type_path) = field_type {
         if type_path.path.segments.is_empty() {
             return None;
