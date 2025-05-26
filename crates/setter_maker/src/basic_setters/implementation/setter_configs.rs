@@ -17,8 +17,8 @@ use syn::{
     punctuated::Punctuated,
 };
 
-const CONFIG_ATTRIBUTE: &str = "configure_setter";
-const DISABLE_ATTRIBUTE: &str = "disable_setters";
+const CONFIG_ATTRIBUTE: &str = "basic_setter";
+const DISABLE_ATTRIBUTE: &str = "disable_basic_setters";
 
 const NAME_PARAM: &str = "name";
 const PREFIX_PARAM: &str = "prefix";
@@ -26,7 +26,7 @@ const SUFFIX_PARAM: &str = "suffix";
 const VISIBILITY_PARAM: &str = "visibility";
 const WITH_INTO_PARAM: &str = "with_into";
 
-const DEFAULT_PREFIX: &str = "with";
+const DEFAULT_PREFIX: &str = "set";
 
 pub type SetterConfigs<'a> = HashMap<&'a Field, Vec<SetterConfig>>;
 

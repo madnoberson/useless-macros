@@ -3,4 +3,4 @@ mod implementation;
 mod setter_configs;
 mod setter_methods;
 
-pub use implementation::do_make_setters;
+pub use implementation::do_make_basic_setters;

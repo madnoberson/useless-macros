@@ -8,14 +8,14 @@ use super::{
     setter_methods::make_setter_methods,
 };
 
-pub fn do_make_setters(mut input: ItemStruct) -> TokenStream1 {
-    let setter_configs = make_setter_configs(&mut input.fields);
+pub fn do_make_basic_setters(mut item: ItemStruct) -> TokenStream1 {
+    let setter_configs = make_setter_configs(&mut item.fields);
     let setter_methods = make_setter_methods(setter_configs);
     let impl_block =
-        make_impl_block(&input.ident, &input.generics, setter_methods);
+        make_impl_block(&item.ident, &item.generics, setter_methods);
 
     quote! {
-        #input
+        #item
         #impl_block
     }
     .into()
